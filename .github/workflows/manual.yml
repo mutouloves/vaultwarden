@@ -1,0 +1,102 @@
+name: Manual # 手动触发,修改自 Release.yml 文件
+
+on:
+  workflow_dispatch:  # 手动触发
+
+jobs: #任务
+  # https://github.com/marketplace/actions/skip-duplicate-actions
+  # 检查确认是否需要构建新的 Docker 镜像
+  # 如果正在创建标签，将跳过此检查，因为它已经具有与之前运行相同的哈希值。
+  skip_check:
+    runs-on: ubuntu-20.04 # 所需的虚拟机环境
+    if: ${{ github.repository == 'mutouloves/vaultwarden' }}
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+      - name: Skip Duplicates Actions # 跳过重复操作【步骤名称】
+        id: skip_check
+        uses: fkirc/skip-duplicate-actions@12aca0a884f6137d619d6a8a09fcc3406ced5281 # v5.3.0 GitHub 的 skip-duplicate-actions @后面可为版本、也可为哈希值
+        with:
+          cancel_others: 'true'
+        # 仅在不创建标签时运行
+        if: ${{ startsWith(github.ref, 'refs/heads/') }}
+
+  docker-build:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 120
+    needs: skip_check
+    # 使用 docker 列表生成多架构镜像
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
+    env:
+      DOCKER_BUILDKIT: 1
+      # DOCKER_REPO/secrets.DOCKERHUB_REPO needs to be 'index.docker.io/<user>/<repo>' #不知何用
+      DOCKER_REPO: ${{ secrets.DOCKERHUB_REPO }}
+      SOURCE_COMMIT: ${{ github.sha }}
+      SOURCE_REPOSITORY_URL: "https://github.com/${{ github.repository }}"
+    if: ${{ needs.skip_check.outputs.should_skip != 'true' && github.repository == 'mutouloves/vaultwarden' }}
+    strategy:
+      matrix:
+        base_image: ["debian","alpine"]
+
+    steps:
+      # 核对仓库
+      - name: Checkout
+        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0 GitHub 的 checkout @后面可为版本、也可为哈希值
+        with:
+          fetch-depth: 0
+
+      # 登陆 Docker Hub
+      - name: Login to Docker Hub
+        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # v2.1.0 GitHub 的 docker-login @后面可为版本、也可为哈希值
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PASS }}
+
+      # 确定 Docker 标签
+      - name: Init Variables
+        id: vars
+        shell: bash
+        run: |
+          # 由 github.ref 确定我们要构建的标签
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "DOCKER_TAG=${GITHUB_REF#refs/*/}" | tee -a "${GITHUB_OUTPUT}"
+          elif [[ "${{ github.ref }}" == refs/heads/* ]]; then
+            echo "DOCKER_TAG=1.0" | tee -a "${GITHUB_OUTPUT}"
+          fi
+      # End
+
+      - name: Build Debian based images # 基于 Debian 构建镜像
+        shell: bash
+        env:
+          DOCKER_TAG: "${{steps.vars.outputs.DOCKER_TAG}}"
+        run: |
+          ./hooks/build
+        if: ${{ matrix.base_image == 'debian' }}
+
+      - name: Push Debian based images # 基于 Debian 推送镜像
+        shell: bash
+        env:
+          DOCKER_TAG: "${{steps.vars.outputs.DOCKER_TAG}}"
+        run: |
+          ./hooks/push
+        if: ${{ matrix.base_image == 'debian' }}
+
+      - name: Build Alpine based images # 基于 Alpine 构建镜像
+        shell: bash
+        env:
+          DOCKER_TAG: "${{steps.vars.outputs.DOCKER_TAG}}-alpine"
+        run: |
+          ./hooks/build
+        if: ${{ matrix.base_image == 'alpine' }}
+
+      - name: Push Alpine based images # 基于 Alpine 推送镜像
+        shell: bash
+        env:
+          DOCKER_TAG: "${{steps.vars.outputs.DOCKER_TAG}}-alpine"
+        run: |
+          ./hooks/push
+        if: ${{ matrix.base_image == 'alpine' }}
