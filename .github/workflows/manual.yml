@@ -40,12 +40,6 @@ jobs:
       # DOCKERHUB_REPO needs to be 'index.docker.io/<user>/<repo>'
       # Check for Docker hub credentials in secrets
       HAVE_DOCKERHUB_LOGIN: ${{ secrets.DOCKERHUB_REPO != '' && secrets.DOCKERHUB_USER != '' && secrets.DOCKERHUB_PASS != '' }}
-      # GHCR_REPO needs to be 'ghcr.io/<user>/<repo>'
-      # Check for Github credentials in secrets
-      HAVE_GHCR_LOGIN: ${{ vars.GHCR_REPO != '' && github.repository_owner != '' && secrets.GITHUB_TOKEN != '' }}
-      # QUAY_REPO needs to be 'quay.io/<user>/<repo>'
-      # Check for Quay.io credentials in secrets
-      HAVE_QUAY_LOGIN: ${{ vars.QUAY_REPO != '' && secrets.QUAY_USERNAME != '' && secrets.QUAY_TOKEN != '' }}
     strategy:
       matrix:
         base_image: ["debian","alpine"]
