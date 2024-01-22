@@ -45,13 +45,13 @@ jobs: #任务
     steps:
       # 核对仓库
       - name: 核对仓库
-        uses: actions/checkout@4.1.1 # v3.2.0 GitHub 的 checkout @后面可为版本、也可为哈希值
+        uses: actions/checkout@v4.1.1 # v3.2.0 GitHub 的 checkout @后面可为版本、也可为哈希值
         with:
           fetch-depth: 0
 
       # 登陆 Docker Hub
       - name: 登陆 Docker Hub
-        uses: docker/login-action@3.0.0 # v2.1.0 GitHub 的 docker-login @后面可为版本、也可为哈希值
+        uses: docker/login-action@v3.0.0 # v2.1.0 GitHub 的 docker-login @后面可为版本、也可为哈希值
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_PASS }}
