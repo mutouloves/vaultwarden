@@ -8,12 +8,12 @@ jobs: #任务
   # 检查确认是否需要构建新的 Docker 镜像
   # 如果正在创建标签，将跳过此检查，因为它已经具有与之前运行相同的哈希值。
   skip_check:
-    runs-on: ubuntu-20.04 # 所需的虚拟机环境
+    runs-on: ubuntu-22.04 # 所需的虚拟机环境
     if: ${{ github.repository == 'mutouloves/vaultwarden' }}
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
     steps:
-      - name: Skip Duplicates Actions # 跳过重复操作【步骤名称】
+      - name: 跳过重复操作 # 跳过重复操作【步骤名称】
         id: skip_check
         uses: fkirc/skip-duplicate-actions@12aca0a884f6137d619d6a8a09fcc3406ced5281 # v5.3.0 GitHub 的 skip-duplicate-actions @后面可为版本、也可为哈希值
         with:
@@ -22,7 +22,7 @@ jobs: #任务
         if: ${{ startsWith(github.ref, 'refs/heads/') }}
 
   docker-build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 120
     needs: skip_check
     # 使用 docker 列表生成多架构镜像
@@ -44,20 +44,20 @@ jobs: #任务
 
     steps:
       # 核对仓库
-      - name: Checkout
-        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0 GitHub 的 checkout @后面可为版本、也可为哈希值
+      - name: 核对仓库
+        uses: actions/checkout@4.1.1 # v3.2.0 GitHub 的 checkout @后面可为版本、也可为哈希值
         with:
           fetch-depth: 0
 
       # 登陆 Docker Hub
-      - name: Login to Docker Hub
-        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # v2.1.0 GitHub 的 docker-login @后面可为版本、也可为哈希值
+      - name: 登陆 Docker Hub
+        uses: docker/login-action@3.0.0 # v2.1.0 GitHub 的 docker-login @后面可为版本、也可为哈希值
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_PASS }}
 
       # 确定 Docker 标签
-      - name: Init Variables
+      - name: 确定 Docker 标签
         id: vars
         shell: bash
         run: |
@@ -69,7 +69,7 @@ jobs: #任务
           fi
       # End
 
-      - name: Build Debian based images # 基于 Debian 构建镜像
+      - name: 基于 Debian 构建镜像 # 基于 Debian 构建镜像
         shell: bash
         env:
           DOCKER_TAG: "${{steps.vars.outputs.DOCKER_TAG}}"
@@ -77,7 +77,7 @@ jobs: #任务
           ./hooks/build
         if: ${{ matrix.base_image == 'debian' }}
 
-      - name: Push Debian based images # 基于 Debian 推送镜像
+      - name: 基于 Debian 推送镜像 # 基于 Debian 推送镜像
         shell: bash
         env:
           DOCKER_TAG: "${{steps.vars.outputs.DOCKER_TAG}}"
@@ -85,7 +85,7 @@ jobs: #任务
           ./hooks/push
         if: ${{ matrix.base_image == 'debian' }}
 
-      - name: Build Alpine based images # 基于 Alpine 构建镜像
+      - name: 基于 Alpine 构建镜像 # 基于 Alpine 构建镜像
         shell: bash
         env:
           DOCKER_TAG: "${{steps.vars.outputs.DOCKER_TAG}}-alpine"
@@ -93,7 +93,7 @@ jobs: #任务
           ./hooks/build
         if: ${{ matrix.base_image == 'alpine' }}
 
-      - name: Push Alpine based images # 基于 Alpine 推送镜像
+      - name: 基于 Alpine 推送镜像 # 基于 Alpine 推送镜像
         shell: bash
         env:
           DOCKER_TAG: "${{steps.vars.outputs.DOCKER_TAG}}-alpine"
